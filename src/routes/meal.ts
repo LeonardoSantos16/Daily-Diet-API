@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest } from 'fastify'
 import { knex } from '../database'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, UUID } from 'node:crypto'
 
 interface MealRequest {
   name: string
@@ -16,7 +16,7 @@ export async function mealRoutes(app: FastifyInstance) {
 
   app.post(
     '/',
-    async (request: FastifyRequest<{ Body: MealRequest }>, response) => {
+    async (request: FastifyRequest<{ Body: MealRequest }>, reply) => {
       const { name, description, diet } = request.body
       await knex('meal').insert({
         id: randomUUID(),
@@ -24,7 +24,38 @@ export async function mealRoutes(app: FastifyInstance) {
         description,
         diet,
       })
-      response.code(201)
+      reply.code(201)
     },
   )
+
+  app.put(
+    '/:id',
+    async (
+      request: FastifyRequest<{ Body: MealRequest; Params: { id: UUID } }>,
+    ) => {
+      const { id } = request.params
+
+      const { name, description, diet } = request.body
+      await knex('meal').where('id', id).update({
+        name,
+        description,
+        diet,
+      })
+    },
+  )
+
+  app.delete(
+    '/:id',
+    async (request: FastifyRequest<{ Params: { id: UUID } }>) => {
+      const { id } = request.params
+      console.log(typeof id)
+      await knex('meal').where('id', id).delete()
+    },
+  )
+
+  app.get('/:id', async (request: FastifyRequest<{ Params: { id: UUID } }>) => {
+    const { id } = request.params
+    const [meal] = await knex('meal').where('id', id).select()
+    return meal
+  })
 }
