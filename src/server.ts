@@ -1,17 +1,9 @@
-import fastify from 'fastify'
-import knex from 'knex'
-
-const app = fastify()
-
-app.get('/hello', async () => {
-  const tables = await knex('meal').select('*')
-  return tables
-})
+import { app } from '../app'
 
 app
   .listen({
     port: 3333,
   })
   .then(() => {
-    console.log('HTTP server Running')
+    console.log('HTTP server Running, port 3333')
   })
