@@ -1,5 +1,6 @@
 import { Knex, knex as setup } from 'knex'
 import 'dotenv/config'
+console.log(process.env.DATABASE_URL)
 ;(async () => {
   try {
     if (
@@ -10,14 +11,18 @@ import 'dotenv/config'
     }
     console.log('URL do banco de dados está configurada corretamente!')
   } catch (error) {
-    console.error('Erro:', error.message)
+    if (error instanceof Error) {
+      console.error('Erro:', error.message)
+    } else {
+      console.error('Erro desconhecido:', error)
+    }
   }
 })()
 
 export const config: Knex.Config = {
   client: 'sqlite',
   connection: {
-    filename: process.env.DATABASE_URL,
+    filename: process.env.DATABASE_URL as string,
   },
   useNullAsDefault: true,
   migrations: {
