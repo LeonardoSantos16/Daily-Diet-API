@@ -9,6 +9,11 @@ interface UserRequest {
   created_at: string
 }
 
+interface LoginRequest {
+  email: string
+  senha: string
+}
+
 export async function userRoutes(app: FastifyInstance) {
   app.post(
     '/user',
@@ -22,14 +27,23 @@ export async function userRoutes(app: FastifyInstance) {
         email,
         senha,
       })
-      reply.setCookie('idUser', idUser, {
+
+      reply.code(201)
+    },
+  )
+  app.post(
+    '/login',
+    async (request: FastifyRequest<{ Body: LoginRequest }>, reply) => {
+      const { email, senha } = request.body
+      const [idUser] = await knex('user').where({ email, senha }).select('id')
+      console.log(idUser.id)
+      reply.setCookie('idUser', idUser.id, {
         path: '/',
         httpOnly: true,
         secure: false,
         maxAge: 60 * 60,
       })
-
-      reply.code(201)
+      reply.code(200)
     },
   )
 }
