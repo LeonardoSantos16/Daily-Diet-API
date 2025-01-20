@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest } from 'fastify'
 import { knex } from '../database'
-import { randomUUID, UUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 
 interface MealRequest {
   name: string
@@ -21,20 +21,22 @@ export async function mealRoutes(app: FastifyInstance) {
     async (request: FastifyRequest<{ Body: MealRequest }>, reply) => {
       const userId = request.cookies.idUser
       const { name, description, diet } = request.body
+      const id = randomUUID()
       await knex('meal').insert({
-        id: randomUUID(),
+        id,
         name,
         description,
         diet,
         user_id: userId,
       })
-      reply.code(201)
+      reply.code(201).send({ message: 'Meal created', id })
     },
   )
   app.put(
     '/:id',
     async (
-      request: FastifyRequest<{ Body: MealRequest; Params: { id: UUID } }>,
+      request: FastifyRequest<{ Body: MealRequest; Params: { id: string } }>,
+      reply,
     ) => {
       const { id } = request.params
       const userId = request.cookies.idUser
@@ -44,23 +46,32 @@ export async function mealRoutes(app: FastifyInstance) {
         description,
         diet,
       })
+
+      reply.code(200).send({ message: 'Meal updated' })
     },
   )
 
   app.delete(
     '/:id',
-    async (request: FastifyRequest<{ Params: { id: UUID } }>) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
       const { id } = request.params
       const userId = request.cookies.idUser
       console.log(typeof id)
       await knex('meal').where({ id, user_id: userId }).delete()
+      reply.code(200).send({ message: 'Meal deleted' })
     },
   )
 
-  app.get('/:id', async (request: FastifyRequest<{ Params: { id: UUID } }>) => {
-    const { id } = request.params
-    const userId = request.cookies.idUser
-    const [meal] = await knex('meal').where({ id, user_id: userId }).select()
-    return meal
-  })
+  app.get(
+    '/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      const { id } = request.params
+      const userId = request.cookies.idUser
+      const [meal] = await knex('meal').where({ id, user_id: userId }).select()
+      if (!meal) {
+        return reply.code(404).send({ message: 'Meal not found' })
+      }
+      return meal
+    },
+  )
 }

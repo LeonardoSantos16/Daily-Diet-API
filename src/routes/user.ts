@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest } from 'fastify'
 import { knex } from '../database'
 import { randomUUID } from 'node:crypto'
+import bcrypt from 'bcrypt'
 
 interface UserRequest {
   name: string
@@ -21,40 +22,58 @@ export async function userRoutes(app: FastifyInstance) {
       const { name, email, senha } = request.body
       const idUser = randomUUID()
 
+      const hashedPassword = await bcrypt.hash(senha, 10)
+
       await knex('user').insert({
         id: idUser,
         name,
         email,
-        senha,
+        senha: hashedPassword,
       })
 
-      reply.code(201)
+      reply.code(201).send({ message: 'User created successfully' })
     },
   )
   app.post(
     '/login',
     async (request: FastifyRequest<{ Body: LoginRequest }>, reply) => {
       const { email, senha } = request.body
-      const [idUser] = await knex('user').where({ email, senha }).select('id')
-      console.log(idUser.id)
-      reply.setCookie('idUser', idUser.id, {
+
+      if (!email || !senha) {
+        return reply
+          .code(400)
+          .send({ error: true, message: 'Email and password are required' })
+      }
+
+      const [user] = await knex('user').where('email', email)
+
+      const isValidPassword = await bcrypt.compare(senha, user.senha)
+
+      if (!isValidPassword) {
+        return reply
+          .code(400)
+          .send({ error: true, message: 'Invalid email or password' })
+      }
+
+      reply.setCookie('idUser', user.id, {
         path: '/',
         httpOnly: true,
         secure: false,
         maxAge: 60 * 60,
       })
-      reply.code(200)
+      reply.code(200).send({ message: 'Login sucessful' })
     },
   )
+
+  app.post('/logout', async (request, reply) => {
+    reply.clearCookie('idUser')
+  })
+
   app.get('/user', async (request, reply) => {
     try {
       let currentSequence = 0
       let maxSequence = 0
       const userId = request.cookies.idUser
-
-      if (!userId) {
-        return reply.code(400).send({ message: 'User not authenticated' })
-      }
 
       const [metrics] = await knex('meal')
         .where('user_id', userId)
