@@ -47,43 +47,51 @@ export async function userRoutes(app: FastifyInstance) {
     },
   )
   app.get('/user', async (request, reply) => {
-    let count = 0
-    let valueMax = 0
-    const userId = request.cookies.idUser
+    try {
+      let currentSequence = 0
+      let maxSequence = 0
+      const userId = request.cookies.idUser
 
-    if (!userId) {
-      return reply.code(400).send({ message: 'User not authenticated' })
-    }
-
-    const [quantityMeal] = await knex('meal').where('user_id', userId).count()
-    const [withinDiet] = await knex('meal')
-      .where({ user_id: userId, diet: 1 })
-      .count()
-    const [offDiet] = await knex('meal')
-      .where({ user_id: userId, diet: 0 })
-      .count()
-
-    const mealsUser = await knex('meal')
-      .where('user_id', userId)
-      .select('created_at', 'diet')
-
-    mealsUser.forEach((meal) => {
-      if (meal.diet === 1) {
-        count++
-        if (count > valueMax) {
-          valueMax = count
-        }
-      } else {
-        count = 0
+      if (!userId) {
+        return reply.code(400).send({ message: 'User not authenticated' })
       }
-    })
 
-    const metricsUser = {
-      quantityMeal: quantityMeal['count(*)'],
-      withinDiet: withinDiet['count(*)'],
-      offDiet: offDiet['count(*)'],
-      valueMax,
+      const [metrics] = await knex('meal')
+        .where('user_id', userId)
+        .select(
+          knex.raw('count(*) as totalMeals'),
+          knex.raw('sum(diet = 1) as withinDiet'),
+          knex.raw('sum(diet = 0) as offDiet'),
+        )
+
+      const mealsUser = await knex('meal')
+        .where('user_id', userId)
+        .orderBy('created_at')
+        .select('created_at', 'diet')
+
+      mealsUser.forEach((meal) => {
+        if (meal.diet === 1) {
+          currentSequence++
+          if (currentSequence > maxSequence) {
+            maxSequence = currentSequence
+          }
+        } else {
+          currentSequence = 0
+        }
+      })
+
+      const metricsUser = {
+        quantityMeal: metrics.totalMeals,
+        withinDiet: metrics.withinDiet,
+        offDiet: metrics.offDiet,
+        bestStreak: maxSequence,
+      }
+
+      return reply.code(200).send(metricsUser)
+    } catch (error) {
+      console.error(error)
+
+      return reply.code(500).send({ message: 'Internal server error' })
     }
-    return metricsUser
   })
 }
