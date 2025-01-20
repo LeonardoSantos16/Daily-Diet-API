@@ -46,4 +46,44 @@ export async function userRoutes(app: FastifyInstance) {
       reply.code(200)
     },
   )
+  app.get('/user', async (request, reply) => {
+    let count = 0
+    let valueMax = 0
+    const userId = request.cookies.idUser
+
+    if (!userId) {
+      return reply.code(400).send({ message: 'User not authenticated' })
+    }
+
+    const [quantityMeal] = await knex('meal').where('user_id', userId).count()
+    const [withinDiet] = await knex('meal')
+      .where({ user_id: userId, diet: 1 })
+      .count()
+    const [offDiet] = await knex('meal')
+      .where({ user_id: userId, diet: 0 })
+      .count()
+
+    const mealsUser = await knex('meal')
+      .where('user_id', userId)
+      .select('created_at', 'diet')
+
+    mealsUser.forEach((meal) => {
+      if (meal.diet === 1) {
+        count++
+        if (count > valueMax) {
+          valueMax = count
+        }
+      } else {
+        count = 0
+      }
+    })
+
+    const metricsUser = {
+      quantityMeal: quantityMeal['count(*)'],
+      withinDiet: withinDiet['count(*)'],
+      offDiet: offDiet['count(*)'],
+      valueMax,
+    }
+    return metricsUser
+  })
 }
