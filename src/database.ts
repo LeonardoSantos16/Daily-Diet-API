@@ -1,6 +1,13 @@
 import { Knex, knex as setup } from 'knex'
-import 'dotenv/config'
-console.log(process.env.DATABASE_URL)
+import { config as dotenvConfig } from 'dotenv'
+
+if (process.env.NODE_ENV === 'test') {
+  dotenvConfig({ path: '../.env.test' })
+} else {
+  dotenvConfig()
+}
+console.log('test', process.env.NODE_ENV)
+console.log('database', process.env.DATABASE_URL)
 ;(async () => {
   try {
     if (
@@ -18,6 +25,8 @@ console.log(process.env.DATABASE_URL)
     }
   }
 })()
+
+console.log(process.env.DATABASE_URL)
 
 export const config: Knex.Config = {
   client: 'sqlite',
