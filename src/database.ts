@@ -1,13 +1,12 @@
 import { Knex, knex as setup } from 'knex'
 import { config as dotenvConfig } from 'dotenv'
 
-if (process.env.NODE_ENV === 'test') {
-  dotenvConfig({ path: '../.env.test' })
+if (process.env.NODE_ENV?.trim() === 'test') {
+  dotenvConfig({ path: '.env.test' })
 } else {
   dotenvConfig()
 }
-console.log('test', process.env.NODE_ENV)
-console.log('database', process.env.DATABASE_URL)
+
 ;(async () => {
   try {
     if (
