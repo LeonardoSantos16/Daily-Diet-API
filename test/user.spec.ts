@@ -5,6 +5,7 @@ import { app } from '../app'
 
 describe('users route', () => {
   let cookies: string[]
+  let mealId: string
 
   afterAll(async () => {
     await app.close()
@@ -31,14 +32,46 @@ describe('users route', () => {
   })
 
   it('should be able to create a new meal ', async () => {
-    await request(app.server)
+    const response = await request(app.server)
       .post('/meal')
       .send({ name: 'test', description: 'haha', diet: false })
       .set('Cookie', cookies)
       .expect(201)
+
+    expect(response.body.message).toBe('Meal created')
+    expect(response.body.id).toBeDefined()
+
+    mealId = response.body.id
   })
 
-  it('get', async () => {
-    await request(app.server).get('/meal').set('Cookie', cookies).expect(200)
+  it('should be able to list all meals', async () => {
+    await request(app.server)
+      .get('/meal')
+      .set('Cookie', cookies)
+      .expect(200)
+      .then((response) => {
+        expect(Array.isArray(response.body)).toBe(true)
+      })
+  })
+
+  it('should be able to update a meal', async () => {
+    await request(app.server)
+      .put(`/meal/${mealId}`)
+      .send({ name: 'memphis', email: 'revodad', senha: 'ada' })
+      .set('Cookie', cookies)
+      .expect(200)
+      .then((response) => {
+        expect(response.body.message).toBe('Meal updated')
+      })
+  })
+
+  it('should be able to delete a meal', async () => {
+    await request(app.server)
+      .delete(`/meal/${mealId}`)
+      .set('Cookie', cookies)
+      .expect(200)
+      .then((response) => {
+        expect(response.body.message).toBe('Meal deleted')
+      })
   })
 })

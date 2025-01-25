@@ -25,8 +25,6 @@ if (process.env.NODE_ENV?.trim() === 'test') {
   }
 })()
 
-console.log(process.env.DATABASE_URL)
-
 export const config: Knex.Config = {
   client: 'sqlite',
   connection: {

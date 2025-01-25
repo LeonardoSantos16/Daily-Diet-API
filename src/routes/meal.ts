@@ -11,7 +11,6 @@ interface MealRequest {
 export async function mealRoutes(app: FastifyInstance) {
   app.get('/', async (request) => {
     const userId = request.cookies.idUser
-    console.log(userId)
     const meal = await knex('meal').where('user_id', userId).select()
     return meal
   })
@@ -56,7 +55,6 @@ export async function mealRoutes(app: FastifyInstance) {
     async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
       const { id } = request.params
       const userId = request.cookies.idUser
-      console.log(typeof id)
       await knex('meal').where({ id, user_id: userId }).delete()
       reply.code(200).send({ message: 'Meal deleted' })
     },
