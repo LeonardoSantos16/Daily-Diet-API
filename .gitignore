@@ -2,4 +2,5 @@
 .env
 .env.test
 /src/dailydiet.db
+/src/test.db
 README
